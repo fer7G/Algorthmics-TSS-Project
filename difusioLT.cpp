@@ -11,8 +11,8 @@ void lectura_graf (graf &g) {
     int m;
     cin >> m; // nº d'arestes
     for (int i = 0; i < m; ++i) {
-        int x, y, w; // x i y son arestes i w es el pes de l'aresta
-        cin >> x >> y; // llegim nodes que fan aresta i pes d'aresta
+        int x, y; // x i y son arestes 
+        cin >> x >> y; // llegim nodes que fan aresta
         g[x].push_back(y);
         g[y].push_back(x);
 
@@ -33,9 +33,9 @@ int main () {
     cin >> n;
     graf g(n); // graf de tamany n
     lectura_graf(g); // llegim el graf
-    int w;
-    cout << "Introdueix un pes per les arestes\n";
-    cin >> w;
+    //int w;
+    cout << "El pes per les arestes es 1\n";
+    //cin >> w;
     float r; // llindar de difusio
     cout << "Introdueix un llindar entre [0.0, 1.0]:\n";
     cin >> r;
@@ -51,21 +51,23 @@ int main () {
     for (int i = 0; i < m; ++i) {
         int adj = g[s[i]].size(); // preparem un for que mirara totes les adjacencias a las que es podra influenciar
         for (int j = 0; j < adj; ++j) {
-            int a = g[s[i]][j]; // com que s'utilitza molt ho guardem per a que sigui mes comode
-            if (influenciat[a] == false and w > (r*a*180/M_PI)) { // comprovem que no estiguem revisant un vector ja influenciat i que w de ij sigui superior al llindar de j
-                s.push_back(a); // marquem que el vertex esta influenciat
+            int a = g[s[i]][j]; // com que s'utilitza mes d'una vegada ho guardem per a que sigui mes comode
+            if (influenciat[a] == false and 1 > (r*a*180/M_PI)) { // comprovem que no estiguem revisant un vertex ja influenciat i que w de ij sigui superior al llindar de j
+                s.push_back(a); // afegim el vertex al conjunt d'influenciats
+                influenciat[a] = true;
                 canvi = true; // marquem que hi ha un canvi en el conjunt d'influenciats
                 ++m;
                 }
             }
+            
             if (canvi) { // t augmenta nomes quan s'ha influenciat a algu en un torn, aqui controlem que aixo passi
                 ++t;
                 canvi = false;
-                influenciat[s[i]] = true;
             }
+            influenciat[s[i]] = true;
 
     }
-    sort(s.begin(), s.end());
+    sort(s.begin(), s.end()); // No fa falta que estigui ordenat, es per estetica
     cout << "Conjunt influenciat = {";
     for (int i = 0; i < m-1; ++i) {
         cout << s[i] << ", ";
