@@ -7,6 +7,7 @@
 #include <ctime>
 #include <chrono>
 using namespace std;
+using namespace std::chrono;
 typedef pair<int, int> pii;
 
 // Struct for undirected graph
@@ -41,12 +42,15 @@ int difusioIC(const Graph& G, double& p, set<int>& S) {
     vector<bool> influenced(G.numNodes, false);
     // Set of active nodes (nodes able to activate other nodes per iteration)
     queue<int> active;
+
+    int n_influenced = 0;
     
     int t = 0;
 
     // Activate initial set of nodes
     for (int vertex : S) {
         influenced[vertex] = true;
+        ++n_influenced;
         active.push(vertex);
     }
 
@@ -66,6 +70,7 @@ int difusioIC(const Graph& G, double& p, set<int>& S) {
                     double r = (double) rand() / RAND_MAX;
                     if (r < p) {
                         influenced[neighbour] = true;
+                        ++n_influenced;
                         active.push(neighbour);
                     }
                 }
@@ -74,9 +79,10 @@ int difusioIC(const Graph& G, double& p, set<int>& S) {
     }
 
     // Count all influenced nodes by S
-    int count = 0;
+/*     int count = 0;
     for (int i = 0; i < influenced.size(); ++i) if (influenced[i]) ++count;
-    return count;
+    return count; */
+    return n_influenced;
 }
 
 // Comparer for the priority queue
@@ -86,40 +92,48 @@ struct Compare {
     }
 };
 
+// Simulate the IC model several times for more accuracy
+int monteCarlo(const Graph& G, double p, set<int>& S, int iterations) {
+    int sum = 0;
+    for (int i = 0; i < iterations; ++i) {
+        sum += difusioIC(G, p, S);
+    }
+    return sum / iterations;
+}
+
 // Greedy algorithm to select the minimum influence set
-set<int> greedyMinInfluenceSet(const Graph& G, double p) {
+set<int> greedyMinInfluenceSet(const Graph& G, double p, int nMonteCarlo, double optimality) {
     set<int> S;
     vector<pair<int, int> > gain;
-    
+    int numNodes = G.numNodes;
     priority_queue<pii, vector<pii>, Compare> Q;
 
-    // Calcular la ganancia marginal de todos los nodos
+    // Calcular la ganancia marginal de todos los nodos e ir insertando en la cola de prioridad
     for (int i = 0; i < G.numNodes; ++i) {
         set<int> single_node_set;
         single_node_set.insert(i);
-        int gain_val = difusioIC(G, p, single_node_set);
-        // gain.push_back(make_pair(i, gain_val));
+        int gain_val = monteCarlo(G, p, single_node_set, nMonteCarlo);
         Q.push(make_pair(i, gain_val));
     }
-
-    // Insertar los nodos en la cola de prioridad
-    // priority_queue<pair<int, int>, vector<pair<int, int> >, decltype(&compare)> Q(compare, gain);
 
     // Añadir el primer nodo de la cola Q a S y quitarlo de la cola
     S.insert(Q.top().first);
     Q.pop();
 
     // Calcular la difusión de S
-    int diffusion = difusioIC(G, p, S);
+    int diffusion = monteCarlo(G, p, S, nMonteCarlo);
 
     // Mientras la cola Q no esté vacía y difusio(G, p, S) != |V|
-    while (!Q.empty() && diffusion != G.numNodes) {
+    while (!Q.empty()) {
+        // If current difussion is OK, break
+        if (diffusion > optimality * numNodes) break;
+
         int current_node = Q.top().first;
 
         // Añadir el primer nodo de la cola Q a S y quitarlo de la cola, si el nodo no está en S
         if (S.find(current_node) == S.end()) {
             S.insert(current_node);
-            diffusion = difusioIC(G, p, S);
+            diffusion = monteCarlo(G, p, S, nMonteCarlo);
         }
         Q.pop();
     }
@@ -157,14 +171,27 @@ int main() {
     Graph G = readGraph();
 
     // Set the probability for the IC model
-    double p = 0.2;
+    double p = 0.5;
 
+    // Set MonteCarlo iterations i.e. number of times the simulation will be executed each time (more iterations -> slower but more accurate)
+    int nMonteCarlo = 10;
+
+    // Set the optimality, e. g. if optimality is 0.9 we will obtain a subset S whose MonteCarlo simulation warrantees covering 90% of the graph
+    double optimality = 0.9;
+
+    auto start = high_resolution_clock::now();
     // Compute the subset with the greedy algorithm
-    set<int> S = greedyMinInfluenceSet(G, p);
+    set<int> S = greedyMinInfluenceSet(G, p, nMonteCarlo, optimality);
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
 
     cout << "Nodos semilla seleccionados:" << endl;
-    for (int node : S) {
+/*     for (int node : S) {
         cout << node << " ";
-    }
+    } */
+    cout << S.size();
+
+    cout << " en " << (double)duration.count()/1000 << " s";
+
     cout << endl;
 }
