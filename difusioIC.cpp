@@ -245,6 +245,11 @@ void readInput(Graph& G, double& p, Subset& S) {
 }
 
 int main() {
+
+    // Generate random seed for proper random values
+    unsigned seed = chrono::high_resolution_clock::now().time_since_epoch().count();
+    srand(seed);
+
     Graph G;
     double p;
     Subset S;
