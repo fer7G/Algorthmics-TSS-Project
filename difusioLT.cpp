@@ -1,77 +1,274 @@
 #include <iostream>
 #include <vector>
-#include <cmath>
-#include <algorithm>
+#include <queue>
 using namespace std;
 
-// estructura de graf
-typedef vector<vector<int>> graf;
+// Struct for undirected graph
+struct Graph {
+    int numNodes;
+    vector<vector<int> > adjList;
 
-void lectura_graf (graf &g) {
-    int m;
-    cin >> m; // nº d'arestes
-    for (int i = 0; i < m; ++i) {
-        int x, y; // x i y son arestes 
-        cin >> x >> y; // llegim nodes que fan aresta
-        g[x].push_back(y);
-        g[y].push_back(x);
+    // Graph constructor:
+    Graph(int n) {
+        numNodes = n;
+        adjList.resize(n);
+    }
+
+    Graph() {
+    }
+
+    //Getters
+    int getNumNodes(){
+        return numNodes;
+    }
+
+    void addEdge(int u, int v) {
+        adjList[u].push_back(v);
+        adjList[v].push_back(u);
+    }
+
+    //Reeds
+    void readEdges(int m){
+
+        for (int i = 0; i < m; ++i) {
+            int u, v;
+            cout << "What's the edge " << i << " origin?" << endl;
+            cin >> u;
+            cout << "And, What's his destiny node?" << endl;
+            cin >> v;
+            addEdge(u, v);
+        }
 
     }
+
+    void randomInitEdges(int m){
+
+        for (int i = 0; i < m; ++i) {
+            
+            int u = rand()%numNodes;
+            int v = rand()%numNodes;
+            
+            while(u == v)
+                v = rand()%numNodes;
+
+            addEdge(u, v);
+        }
+
+    }
+
+    void readFromFile(int m){
+
+        char c;
+        int u,v;
+
+        for(int i = 0; i < m; ++i){
+            cin >> c >> u >> v;
+            addEdge(u,v);
+        }
+
+    }
+
+    //Print
+    void printEdges() {
+        for (int vertex = 0; vertex < adjList.size(); ++vertex) {
+            for (int neighbour : adjList[vertex]) cout << vertex << " -> " << neighbour << endl;
+        }
+    }
+};
+
+struct Subset{
+
+    int numNodes;
+    int seedSize;
+
+    vector<int> S;
+
+
+    //Constructors
+    Subset(){
+    }
+    Subset(int n){
+        numNodes = n;
+    }
+
+    //Getters
+    int getSeedSize(){
+        return seedSize;
+    }
+
+    vector<int> getVector(){
+        return S;
+    }
+
+    //Reads
+    void readSeed(int s){
+
+        cout << "Enter " << s << " nodes for the initial seed: ";
+
+        for (int i = 0; i < s; ++i) {
+            int u;
+            cin >> u;
+            while (u < 0 and u >= numNodes) {
+                cout << "That node doesn't exist! Give an index from 0 to " << numNodes - 1 << ", please." << endl;
+                cin >> u;
+            }
+            S.push_back(u);
+        }
+    }
+
+    void randomInitSeed(int s){
+
+        for (int i = 0; i < s; ++i) {
+            int u = rand()%numNodes;
+            S.push_back(u);
+        }
+
+    }
+};
+
+int simulateLT(Graph& G, double& r, Subset& S, int& t) {
+    // Set of influenced nodes
+    vector<bool> influenced(G.numNodes, false);
+    // Set of active nodes (per iteration)
+    queue<int> active;
+    
+    t = -1;
+
+    // Activate initial set of nodes
+    for (int vertex : S.getVector()) {
+        influenced[vertex] = true;
+        active.push(vertex);
+    }
+
+    queue<int> influencedAux;
+    // Continue until no more active nodes
+    while (not active.empty()) {
+        ++t;
+        int numCurrentActive = active.size();
+        // Process all active nodes in the current layer
+        for (int i = 0; i < numCurrentActive; ++i) {
+            int v = active.front();
+            active.pop();
+            // Check neighbours of v
+            for (int j = 0; j < G.adjList[v].size(); ++j) {
+                int neighbour = G.adjList[v][j];
+                 // If neighbor is not already active, try to activate it
+                if (not influenced[neighbour]) {
+                    double l = r * G.adjList[neighbour].size(); 
+                    int w = 0;
+                    for(int k= 0; k< G.adjList[neighbour].size(); ++k) if(influenced[G.adjList[neighbour][k]]) ++w;
+                    if (w >= l) {
+                        //añadir a la cola
+                        influencedAux.push(neighbour);
+                    }
+                }
+            }
+        }
+        //vaciar la cola
+        while(not influencedAux.empty()) {
+            int u = influencedAux.front();
+            influencedAux.pop();
+            
+            influenced[u] = true;
+            active.push(u);
+        }
+    }
+
+    int count = 0;
+    for (int i = 0; i < influenced.size(); ++i) if (influenced[i]) ++count; 
+    return count;
 }
 
-void lectura_subconj (vector<int> &s) {
-    int v; // index dels vertexs del subconjunt S
-    cout << "Introdueix subconjunt:\n";
-    while (cin >> v) {
-        s.push_back(v);
+void readInput(Graph& G, double& r, Subset& S) {
+
+    int n, m;
+    char controlChar;
+    cin >> controlChar;
+
+    if (controlChar == 'p'){
+
+        string s;
+        cin >> s;
+        cin >> n >> m;
+
+        G = Graph(n);
+        G.readFromFile(m);
+
+    } else{
+    
+        cout << "Enter number of nodes: ";
+        cin >> n;
+        cout << "Enter number of edges: ";
+        cin >> m;
+        G = Graph(n);
+
+        cout << "If you prefer a Graph Random Initialitzation write R, if you wanna do it Manual write M" << endl;
+        
+        cin >> controlChar;
+
+        while(controlChar != 'R' and controlChar != 'M'){
+            cout << "Write and R or N, please." << endl;
+            cin >> controlChar;
+        }
+
+        if(controlChar == 'M') 
+            G.readEdges(m);
+        
+        else{
+            cout << "Please, give me a Random Seed: ";
+            
+            int randSeed;
+            cin >> randSeed;
+            srand(randSeed);
+
+            G.randomInitEdges(m);
+        }
     }
+
+    int s;
+
+    cout << "Enter number of nodes in the initial seed: ";
+    cin >> s;
+
+    cout << "If you prefer a SeedNodes Random Initialitzation write R, if you wanna do it Manual write M" << endl;
+    
+    cin >> controlChar;
+
+    while(controlChar != 'R' and controlChar != 'M'){
+        cout << "Write and R or N, please." << endl;
+        cin >> controlChar;
+    }
+
+    S = Subset(n);
+
+    if (controlChar == 'M')
+        S.readSeed(s);
+    else
+        S.randomInitSeed(s);
+
+    cout << "Enter influence ratio [0, 1] for LT model: ";
+    cin >> r;
+
 }
 
 int main () {
 
-    int n; // nº de vertexs
-    cin >> n;
-    graf g(n); // graf de tamany n
-    lectura_graf(g); // llegim el graf
-    //int w;
-    cout << "El pes per les arestes es 1\n";
-    //cin >> w;
-    float r; // llindar de difusio
-    cout << "Introdueix un llindar entre [0.0, 1.0]:\n";
-    cin >> r;
-    vector<int> s;
-    lectura_subconj(s);
-    vector<bool> influenciat(n, false);
+    Graph G;
+    double r;
+    Subset S;
+    readInput(G, r, S);
+    cout << "NumNodes " << G.getNumNodes() << endl;
+    cout << "Size of seed " << S.getSeedSize() << endl;
+    
+    time_t startTime = time(NULL);
+    
+    int t = 0;
+    int C = simulateLT(G, r, S, t); // Falta hacer la funcion
+    
+    time_t endTime = time(NULL);
 
-//  Fins aqui ha estat lectura d'entrada -------------------------------------------------------
-
-    int m = s.size(); // iteracions minimes a fer, ja que es el subconjunt inicial
-    int t = 0; // t es el numero de "torns" transcorreguts
-    bool canvi = false;
-    for (int i = 0; i < m; ++i) {
-        int adj = g[s[i]].size(); // preparem un for que mirara totes les adjacencias a las que es podra influenciar
-        for (int j = 0; j < adj; ++j) {
-            int a = g[s[i]][j]; // com que s'utilitza mes d'una vegada ho guardem per a que sigui mes comode
-            if (influenciat[a] == false and 1 > (r*a*180/M_PI)) { // comprovem que no estiguem revisant un vertex ja influenciat i que w de ij sigui superior al llindar de j
-                s.push_back(a); // afegim el vertex al conjunt d'influenciats
-                influenciat[a] = true;
-                canvi = true; // marquem que hi ha un canvi en el conjunt d'influenciats
-                ++m;
-                }
-            }
-            
-            if (canvi) { // t augmenta nomes quan s'ha influenciat a algu en un torn, aqui controlem que aixo passi
-                ++t;
-                canvi = false;
-            }
-            influenciat[s[i]] = true;
-
-    }
-    sort(s.begin(), s.end()); // No fa falta que estigui ordenat, es per estetica
-    cout << "Conjunt influenciat = {";
-    for (int i = 0; i < m-1; ++i) {
-        cout << s[i] << ", ";
-    }
-    cout << s[m-1] << '}' << endl;
-    cout << "t = " << t << endl;
+    cout << "Size of C: " << C << endl;
+    cout << "Value of t: " << t << endl;
+    cout << "The simulation have been done in " << endTime - startTime << " seconds" << endl;
+    
 }
