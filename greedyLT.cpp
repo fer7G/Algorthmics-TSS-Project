@@ -1,4 +1,3 @@
-// In this greedy we will pick the vertex with the higher degree that has not been influenced
 #include <iostream>
 #include <vector>
 #include <queue>
@@ -7,9 +6,19 @@
 #include <set>
 #include <ctime>
 #include <chrono>
+#include <unordered_set>
 #include "difusioLT.cpp"
 using namespace std;
 using namespace std::chrono;
+
+void printSet(Subset& S) {
+    cout << "Initial set: {";
+    int n = S.size() - 1;
+    for (int i = 0; i < n; ++i) {
+        cout << S[i] << ", " ;
+    }
+    cout << S[n] << '}' << endl;
+}
 
 void readDegree(const Graph& G, priority_queue<pair<int,int> >& pq) {
     for (int i = 0; i < G.numNodes; ++i) {
@@ -20,48 +29,34 @@ void readDegree(const Graph& G, priority_queue<pair<int,int> >& pq) {
         }
 }
 
-void findSubset(Subset& S, priority_queue<pair<int,int> >& pq, Graph& G, double r) {
-    S.push_back(pq.top().second);
-    pq.pop(); 
-    int t = 0;
-    int C = simulateLT(G, r, S, t);
-    bool done = false;
-    while (not done) {
-        cout << "G.totalInfluenced " << G.getTotalInfluenced() << endl;
-            
-        if(C != G.numNodes){
-            while (not pq.empty() and G.influenced[pq.top().second]) {
-                cout << pq.size() << " " << G.influenced[pq.top().second] <<endl;
-                pq.pop();
-            }
-            
-            if(not pq.empty()){
-                S.push_back(pq.top().second);
-                pq.pop();
-                C = simulateLT(G, r, S, t);
-            }
-            else{
-                cout << "elseDolent ";
-                done = true;
-            }
+void findSubset(Subset& S, priority_queue<pair<int,int> >& pq, const Graph G, double r) {
+    unordered_set<int> evaluated_nodes; // conjunto de nodos ya evaluados
+    while (!pq.empty()) {
+        int node = pq.top().second;
+        pq.pop();
+        if (evaluated_nodes.count(node)) { // si el nodo ya se evaluó, saltar la evaluación
+            continue;
         }
-        else {
-                cout << "elseBo ";
-                done = true;
+        S.push_back(node);
+        evaluated_nodes.insert(node);
+        int t;
+        Graph Gaux = G;
+        int aux1 = simulateLT(Gaux, r, S,t);
+        int aux2 = G.numNodes;
+        /*
+        cout<<"-Nodos influenciados : "<< aux1<<endl;
+        cout<<"-Numero de nodos : "<< aux2<<endl;
+        cout<<"-simulateLT(Gaux, r, S,t) == G.numNodes- : "<< (simulateLT(Gaux, r, S,t) == G.numNodes)<< endl;
+        cout<<"-------------------------------------"<<endl;
+        */
+        if (aux1 == aux2) { // evaluar el conjunto completo al final
+            cout<<"hola"<<endl;
+            break;
         }
-
     }
-    cout << "done " << C << " n " << G.numNodes << endl;
 }
 
-void printSet(Subset& S) {
-    cout << "Initial set: {";
-    int n = S.size() - 1;
-    for (int i = 0; i < n; ++i) {
-        cout << S[i] << ", " ;
-    }
-    cout << S[n] << '}' << endl;
-}
+
 
 int main () {
     unsigned seed = chrono::high_resolution_clock::now().time_since_epoch().count();
