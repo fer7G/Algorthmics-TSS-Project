@@ -11,7 +11,7 @@
 using namespace std;
 using namespace std::chrono;
 
-void readDegree(const Graph& G, priority_queue<pair<int,int>>& pq) {
+void readDegree(const Graph& G, priority_queue<pair<int,int> >& pq) {
     for (int i = 0; i < G.numNodes; ++i) {
             pair<int,int> p;
             p.first = G.adjList[i].size();
@@ -20,17 +20,38 @@ void readDegree(const Graph& G, priority_queue<pair<int,int>>& pq) {
         }
 }
 
-void findSubset(Subset& S, priority_queue<pair<int,int>>& pq, Graph& G, double r) {
+void findSubset(Subset& S, priority_queue<pair<int,int> >& pq, Graph& G, double r) {
     S.push_back(pq.top().second);
     pq.pop(); 
     int t = 0;
-    while (simulateLT(G, r, S, t) != G.numNodes) {
-        while (G.influenced[pq.top().second]) {
-            pq.pop();
+    int C = simulateLT(G, r, S, t);
+    bool done = false;
+    while (not done) {
+        cout << "G.totalInfluenced " << G.getTotalInfluenced() << endl;
+            
+        if(C != G.numNodes){
+            while (not pq.empty() and G.influenced[pq.top().second]) {
+                cout << pq.size() << " " << G.influenced[pq.top().second] <<endl;
+                pq.pop();
+            }
+            
+            if(not pq.empty()){
+                S.push_back(pq.top().second);
+                pq.pop();
+                C = simulateLT(G, r, S, t);
+            }
+            else{
+                cout << "elseDolent ";
+                done = true;
+            }
         }
-        S.push_back(pq.top().second);
-        pq.pop();
+        else {
+                cout << "elseBo ";
+                done = true;
+        }
+
     }
+    cout << "done " << C << " n " << G.numNodes << endl;
 }
 
 void printSet(Subset& S) {
@@ -44,9 +65,11 @@ void printSet(Subset& S) {
 
 int main () {
     unsigned seed = chrono::high_resolution_clock::now().time_since_epoch().count();
+    cout << "Hola" << endl;
     Graph G= readGraph();
+    cout << "Adios" << endl;
     double r = 0.5;
-    priority_queue<pair<int,int>> pq; // first = grado, second = vertice
+    priority_queue<pair<int,int> > pq; // first = grado, second = vertice
     readDegree(G, pq);
     Subset S;
     auto start = high_resolution_clock::now();
