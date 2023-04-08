@@ -6,7 +6,6 @@
 #include <set>
 #include <ctime>
 #include <chrono>
-#include <unordered_set>
 #include "difusioLT.cpp"
 using namespace std;
 using namespace std::chrono;
@@ -20,6 +19,12 @@ void printSet(Subset& S) {
     cout << S[n] << '}' << endl;
 }
 
+// Reset del grafo
+void graphreset(Graph& G){
+    fill(G.influenced.begin(), G.influenced.end(),false);
+    fill(G.peso.begin(), G.peso.end(),0);
+}
+
 void readDegree(const Graph& G, priority_queue<pair<int,int> >& pq) {
     for (int i = 0; i < G.numNodes; ++i) {
             pair<int,int> p;
@@ -29,40 +34,25 @@ void readDegree(const Graph& G, priority_queue<pair<int,int> >& pq) {
         }
 }
 
-void findSubset(Subset& S, priority_queue<pair<int,int> >& pq, const Graph G, double r) {
-    unordered_set<int> evaluated_nodes; // conjunto de nodos ya evaluados
+void findSubset(Subset& S, priority_queue<pair<int,int> >& pq, Graph& G, double r) {
     while (!pq.empty()) {
         int node = pq.top().second;
         pq.pop();
-        if (evaluated_nodes.count(node)) { // si el nodo ya se evaluó, saltar la evaluación
-            continue;
-        }
         S.push_back(node);
-        evaluated_nodes.insert(node);
         int t;
-        Graph Gaux = G;
-        int aux1 = simulateLT(Gaux, r, S,t);
+        graphreset(G);
+
+        //Estas 2 variables porque por algun motivo 10 != 10
+        int aux1 = simulateLT(G, r, S,t);
         int aux2 = G.numNodes;
-        /*
-        cout<<"-Nodos influenciados : "<< aux1<<endl;
-        cout<<"-Numero de nodos : "<< aux2<<endl;
-        cout<<"-simulateLT(Gaux, r, S,t) == G.numNodes- : "<< (simulateLT(Gaux, r, S,t) == G.numNodes)<< endl;
-        cout<<"-------------------------------------"<<endl;
-        */
-        if (aux1 == aux2) { // evaluar el conjunto completo al final
-            cout<<"hola"<<endl;
-            break;
-        }
+
+        if (aux1 == aux2) break;
     }
 }
 
-
-
 int main () {
     unsigned seed = chrono::high_resolution_clock::now().time_since_epoch().count();
-    cout << "Hola" << endl;
     Graph G= readGraph();
-    cout << "Adios" << endl;
     double r = 0.5;
     priority_queue<pair<int,int> > pq; // first = grado, second = vertice
     readDegree(G, pq);
