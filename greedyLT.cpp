@@ -32,21 +32,24 @@ void readGain(Graph& G, double r, priority_queue<pair<int,int> >& pq) {
     for (int i = 0; i < G.numNodes; ++i) {
             Subset s(1, i);
             int t = 0;
-            pq.push(make_pair(simulateLT(G, 0.5, s, t), i));
+            pq.push(make_pair(simulateLT(G, r, s, t), i));
         }
 }
 
 void findSubset(Subset& S, priority_queue<pair<int,int> >& pq, Graph& G, double r) {
-    int v = pq.top().second;
-    pq.pop();
-    S.push_back(v);
-    int t = 0;
-    while (not pq.empty() and simulateLT(G, r, S, t) != G.numNodes) {
-        v = pq.top().second;
-        if (not G.influenced[v]) {
-            S.push_back(v);
-        }
+    while (!pq.empty()) {
+        int node = pq.top().second;
         pq.pop();
+        if(!G.influenced[node]) {
+            S.push_back(node);
+        }
+        int t;
+
+        //Estas 2 variables porque por algun motivo 10 != 10
+        int aux1 = simulateLT(G, r, S,t);
+        int aux2 = G.numNodes;
+
+        if (aux1 == aux2) break;
     }
 }
 
@@ -54,9 +57,9 @@ int main () {
     unsigned seed = chrono::high_resolution_clock::now().time_since_epoch().count();
     Graph G= readGraph();
     double r = 0.5;
-    priority_queue<pair<int,int> > pq; // first = grado, second = vertice
-    //readDegree(G,r, pq);
-    readGain(G,r,pq);
+    priority_queue<pair<int,int> > pq; // first = grado | millora marginal, second = vertex
+    //readDegree(G, r, pq);
+    readGain(G, r, pq);
     Subset S;
     auto start = high_resolution_clock::now();
     findSubset(S, pq, G, r);
