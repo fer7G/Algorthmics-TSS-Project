@@ -141,6 +141,27 @@ set<int> greedyMinInfluenceSet(const Graph& G, double p, int nMonteCarlo, double
     return S;
 }
 
+// Local search algorithm for best improvement
+void localSearch(const Graph& G, double p, set<int>& S, int nMonteCarlo, double optimality) {
+    bool improvement = true;
+    
+    while (improvement) {
+        improvement = false;
+        for (int node : S) {
+            set<int> tempS(S);
+            tempS.erase(node);
+            int currentInfluence = monteCarlo(G, p, S, nMonteCarlo);
+            int tempInfluence = monteCarlo(G, p, tempS, nMonteCarlo);
+            
+            if (tempInfluence > currentInfluence && tempInfluence >= optimality * G.numNodes) {
+                improvement = true;
+                S = tempS;
+            }
+        }
+    }
+}
+
+
 // Read a Graph (adapted for dimacs files)
 Graph readGraph() {
     char p;
@@ -174,7 +195,7 @@ int main() {
     double p = 0.5;
 
     // Set MonteCarlo iterations i.e. number of times the simulation will be executed each time (more iterations -> slower but more accurate)
-    int nMonteCarlo = 1;
+    int nMonteCarlo = 10;
 
     // Set the optimality, e. g. if optimality is 0.9 we will obtain a subset S whose MonteCarlo simulation warrantees covering 90% of the graph
     double optimality = 0.99;
@@ -185,13 +206,15 @@ int main() {
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
 
-    cout << "Nodos semilla seleccionados:" << endl;
-/*     for (int node : S) {
-        cout << node << " ";
-    } */
-    cout << S.size();
+    // Greedy solution output
+    cout << "Nodos semilla seleccionados en la solución inicial:" << S.size() << " en " << (double)duration.count()/1000 << " s" << endl;
 
-    cout << " en " << (double)duration.count()/1000 << " s";
+    start = high_resolution_clock::now();
+    // Compute a localSearch approach from the greedy solution
+    localSearch(G, p, S, nMonteCarlo, optimality);
+    stop = high_resolution_clock::now();
+    duration = duration_cast<milliseconds>(stop - start);
 
-    cout << endl;
+    // Local search solution output
+    cout << "Nodos semilla seleccionados por la búsqueda local:" << S.size() << " en " << (double)duration.count()/1000 << " s" << endl;
 }
