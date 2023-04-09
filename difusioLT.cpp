@@ -24,11 +24,17 @@ struct Graph {
     void actualizarpesovecinos(int x) {
         for (auto neighbor : adjList[x]) ++peso[neighbor];
     }
+    // Reset del grafo
+    void graphreset(){
+        fill(influenced.begin(), influenced.end(),false);
+        fill(peso.begin(), peso.end(),0);
+    }
 };
 
 int simulateLT(Graph& G, double r, Subset& S, int& t) {
     queue<int> active;
     t = -1;
+    G.graphreset();
     // Activate initial set of nodes
     for (auto vertex : S) {
         G.influenced[vertex] = true;
