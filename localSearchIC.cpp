@@ -153,7 +153,7 @@ void localSearch(const Graph& G, double p, set<int>& S, int nMonteCarlo, double 
             int currentInfluence = monteCarlo(G, p, S, nMonteCarlo);
             int tempInfluence = monteCarlo(G, p, tempS, nMonteCarlo);
             
-            if (tempInfluence > currentInfluence && tempInfluence >= optimality * G.numNodes) {
+            if (tempInfluence >= currentInfluence && tempInfluence >= optimality * G.numNodes) {
                 improvement = true;
                 S = tempS;
             }
