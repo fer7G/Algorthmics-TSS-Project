@@ -37,19 +37,20 @@ void readGain(Graph& G, double r, priority_queue<pair<int,int> >& pq) {
 }
 
 void findSubset(Subset& S, priority_queue<pair<int,int> >& pq, Graph& G, double r) {
-    while (!pq.empty()) {
-        int node = pq.top().second;
-        pq.pop();
-        if(!G.influenced[node]) {
-            S.push_back(node);
+    int v = pq.top().second;
+    pq.pop();
+    S.push_back(v);
+    int t = 0;
+    int difusio = simulateLT(G, r, S, t);
+    while (not pq.empty() and difusio != G.numNodes) {
+        v = pq.top().second;
+        while (G.influenced[v]) {
+            v = pq.top().second;
+            pq.pop();
         }
-        int t;
-
-        //Estas 2 variables porque por algun motivo 10 != 10
-        int aux1 = simulateLT(G, r, S,t);
-        int aux2 = G.numNodes;
-
-        if (aux1 == aux2) break;
+        S.push_back(v);
+        difusio = simulateLT(G, r, S, t);
+        pq.pop();
     }
 }
 
