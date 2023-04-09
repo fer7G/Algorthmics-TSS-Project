@@ -1,148 +1,44 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <chrono>
 using namespace std;
+using namespace std::chrono;
+using Subset = vector<int>;
 
 // Struct for undirected graph
 struct Graph {
     int numNodes;
-    vector<vector<int> > adjList;
+    vector<vector<int>> adjList;
+    vector<bool> influenced;
+    vector<int> peso;
 
     // Graph constructor:
-    Graph(int n) {
-        numNodes = n;
-        adjList.resize(n);
-    }
-
-    Graph() {
-    }
-
-    //Getters
-    int getNumNodes(){
-        return numNodes;
-    }
+    Graph(int n) : numNodes(n), adjList(n), influenced(n), peso(n) {}
 
     void addEdge(int u, int v) {
         adjList[u].push_back(v);
         adjList[v].push_back(u);
     }
 
-    //Reeds
-    void readEdges(int m){
-
-        for (int i = 0; i < m; ++i) {
-            int u, v;
-            cout << "What's the edge " << i << " origin?" << endl;
-            cin >> u;
-            cout << "And, What's his destiny node?" << endl;
-            cin >> v;
-            addEdge(u, v);
-        }
-
-    }
-
-    void randomInitEdges(int m){
-
-        for (int i = 0; i < m; ++i) {
-            
-            int u = rand()%numNodes;
-            int v = rand()%numNodes;
-            
-            while(u == v)
-                v = rand()%numNodes;
-
-            addEdge(u, v);
-        }
-
-    }
-
-    void readFromFile(int m){
-
-        char c;
-        int u,v;
-
-        for(int i = 0; i < m; ++i){
-            cin >> c >> u >> v;
-            addEdge(u,v);
-        }
-
-    }
-
-    //Print
-    void printEdges() {
-        for (int vertex = 0; vertex < adjList.size(); ++vertex) {
-            for (int neighbour : adjList[vertex]) cout << vertex << " -> " << neighbour << endl;
-        }
+    void actualizarpesovecinos(int x) {
+        for (auto neighbor : adjList[x]) ++peso[neighbor];
     }
 };
 
-struct Subset{
-
-    int numNodes;
-    int seedSize;
-
-    vector<int> S;
-
-
-    //Constructors
-    Subset(){
-    }
-    Subset(int n){
-        numNodes = n;
-    }
-
-    //Getters
-    int getSeedSize(){
-        return seedSize;
-    }
-
-    vector<int> getVector(){
-        return S;
-    }
-
-    //Reads
-    void readSeed(int s){
-
-        cout << "Enter " << s << " nodes for the initial seed: ";
-
-        for (int i = 0; i < s; ++i) {
-            int u;
-            cin >> u;
-            while (u < 0 and u >= numNodes) {
-                cout << "That node doesn't exist! Give an index from 0 to " << numNodes - 1 << ", please." << endl;
-                cin >> u;
-            }
-            S.push_back(u);
-        }
-    }
-
-    void randomInitSeed(int s){
-
-        for (int i = 0; i < s; ++i) {
-            int u = rand()%numNodes;
-            S.push_back(u);
-        }
-
-    }
-};
-
-int simulateLT(Graph& G, double& r, Subset& S, int& t) {
-    // Set of influenced nodes
-    vector<bool> influenced(G.numNodes, false);
-    // Set of active nodes (per iteration)
+int simulateLT(Graph& G, double r, Subset& S, int& t) {
     queue<int> active;
-    
     t = -1;
-
     // Activate initial set of nodes
-    for (int vertex : S.getVector()) {
-        influenced[vertex] = true;
+    for (auto vertex : S) {
+        G.influenced[vertex] = true;
+        G.actualizarpesovecinos(vertex);
         active.push(vertex);
     }
-
+    int n_influenced = active.size();
     queue<int> influencedAux;
     // Continue until no more active nodes
-    while (not active.empty()) {
+    while (!active.empty()) {
         ++t;
         int numCurrentActive = active.size();
         // Process all active nodes in the current layer
@@ -150,125 +46,73 @@ int simulateLT(Graph& G, double& r, Subset& S, int& t) {
             int v = active.front();
             active.pop();
             // Check neighbours of v
-            for (int j = 0; j < G.adjList[v].size(); ++j) {
-                int neighbour = G.adjList[v][j];
-                 // If neighbor is not already active, try to activate it
-                if (not influenced[neighbour]) {
-                    double l = r * G.adjList[neighbour].size(); 
-                    int w = 0;
-                    for(int k= 0; k< G.adjList[neighbour].size(); ++k) if(influenced[G.adjList[neighbour][k]]) ++w;
-                    if (w >= l) {
-                        //añadir a la cola
-                        influencedAux.push(neighbour);
+            for (auto neighbor : G.adjList[v]) {
+                // If neighbor is not already active, try to activate it
+                if (!G.influenced[neighbor]) {
+                    double l = r * G.adjList[neighbor].size();
+                    if (G.peso[neighbor] >= l) {
+                        G.influenced[neighbor] = true;
+                        influencedAux.push(neighbor);
+                        ++n_influenced;
                     }
                 }
             }
         }
-        //vaciar la cola
-        while(not influencedAux.empty()) {
+        // Move influencedAux nodes to active and update their weights
+        while (!influencedAux.empty()) {
             int u = influencedAux.front();
             influencedAux.pop();
-            
-            influenced[u] = true;
-            active.push(u);
+            if (G.peso[u] != G.adjList[u].size()) {
+                active.push(u);
+                ++G.peso[u];
+                for (auto neighbor : G.adjList[u]) {
+                    ++G.peso[neighbor];
+                }
+            }
         }
     }
-
-    int count = 0;
-    for (int i = 0; i < influenced.size(); ++i) if (influenced[i]) ++count; 
-    return count;
+    return n_influenced;
 }
 
-void readInput(Graph& G, double& r, Subset& S) {
-
+Graph readGraph() {
+    char p;
+    string edge;
+    cin >> p >> edge;
     int n, m;
-    char controlChar;
-    cin >> controlChar;
+    cin >> n >> m;
 
-    if (controlChar == 'p'){
+    Graph G(n);
 
-        string s;
-        cin >> s;
-        cin >> n >> m;
-
-        G = Graph(n);
-        G.readFromFile(m);
-
-    } else{
-    
-        cout << "Enter number of nodes: ";
-        cin >> n;
-        cout << "Enter number of edges: ";
-        cin >> m;
-        G = Graph(n);
-
-        cout << "If you prefer a Graph Random Initialitzation write R, if you wanna do it Manual write M" << endl;
-        
-        cin >> controlChar;
-
-        while(controlChar != 'R' and controlChar != 'M'){
-            cout << "Write and R or N, please." << endl;
-            cin >> controlChar;
-        }
-
-        if(controlChar == 'M') 
-            G.readEdges(m);
-        
-        else{
-            cout << "Please, give me a Random Seed: ";
-            
-            int randSeed;
-            cin >> randSeed;
-            srand(randSeed);
-
-            G.randomInitEdges(m);
-        }
+    char e;
+    int u, v;
+    for (int i = 0; i < m; ++i) {
+        cin >> e >> u >> v;
+        G.addEdge(u - 1, v - 1);
     }
 
-    int s;
+    return G;
+}
 
+void readInputSubset(Subset& S) {
+    int s;
     cout << "Enter number of nodes in the initial seed: ";
     cin >> s;
-
-    cout << "If you prefer a SeedNodes Random Initialitzation write R, if you wanna do it Manual write M" << endl;
-    
-    cin >> controlChar;
-
-    while(controlChar != 'R' and controlChar != 'M'){
-        cout << "Write and R or N, please." << endl;
-        cin >> controlChar;
+    cout << "Enter " << s << " nodes for the initial seed: ";
+    for (int i = 0; i < s; ++i) {
+        int u;
+        cin >> u;
+        S.push_back(u);
     }
-
-    S = Subset(n);
-
-    if (controlChar == 'M')
-        S.readSeed(s);
-    else
-        S.randomInitSeed(s);
-
-    cout << "Enter influence ratio [0, 1] for LT model: ";
-    cin >> r;
-
 }
-
-int main () {
-
-    Graph G;
-    double r;
+/*
+int main() {
+    Graph G = readGraph();
+    double r = 0.5;
     Subset S;
-    readInput(G, r, S);
-    cout << "NumNodes " << G.getNumNodes() << endl;
-    cout << "Size of seed " << S.getSeedSize() << endl;
-    
-    time_t startTime = time(NULL);
-    
+    readInputSubset(S);
     int t = 0;
-    int C = simulateLT(G, r, S, t); // Falta hacer la funcion
-    
-    time_t endTime = time(NULL);
 
+    int C = simulateLT(G, r, S, t); // Falta hacer la funcion
     cout << "Size of C: " << C << endl;
     cout << "Value of t: " << t << endl;
-    cout << "The simulation have been done in " << endTime - startTime << " seconds" << endl;
-    
-}
+}*/
