@@ -1,14 +1,4 @@
-#include <iostream>
-#include <vector>
-#include <queue>
-#include <algorithm>
-#include <utility>
-#include <set>
-#include <ctime>
-#include <chrono>
 #include "difusioLT.cpp"
-using namespace std;
-using namespace std::chrono;
 
 void printSet(Subset& S) {
     cout << "Initial set: {";
