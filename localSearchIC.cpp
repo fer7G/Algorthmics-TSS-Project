@@ -109,7 +109,7 @@ set<int> greedyMinInfluenceSet(const Graph& G, double p, int nMonteCarlo, double
     priority_queue<pii, vector<pii>, Compare> Q;
 
     // Calcular la ganancia marginal de todos los nodos e ir insertando en la cola de prioridad
-    for (int i = 0; i < G.numNodes; ++i) {
+    for (int i = 0; i < numNodes; ++i) {
         set<int> single_node_set;
         single_node_set.insert(i);
         int gain_val = monteCarlo(G, p, single_node_set, nMonteCarlo);
@@ -126,7 +126,7 @@ set<int> greedyMinInfluenceSet(const Graph& G, double p, int nMonteCarlo, double
     // Mientras la cola Q no esté vacía y difusio(G, p, S) != |V|
     while (!Q.empty()) {
         // If current difussion is OK, break
-        if (diffusion > optimality * numNodes) break;
+        if (diffusion >= optimality * numNodes) break;
 
         int current_node = Q.top().first;
 
@@ -147,15 +147,17 @@ void localSearch(const Graph& G, double p, set<int>& S, int nMonteCarlo, double 
     
     while (improvement) {
         improvement = false;
+        int currentInfluence = monteCarlo(G, p, S, nMonteCarlo);
         for (int node : S) {
             set<int> tempS(S);
             tempS.erase(node);
-            int currentInfluence = monteCarlo(G, p, S, nMonteCarlo);
+            // int currentInfluence = monteCarlo(G, p, S, nMonteCarlo);
             int tempInfluence = monteCarlo(G, p, tempS, nMonteCarlo);
             
             if (tempInfluence >= currentInfluence && tempInfluence >= optimality * G.numNodes) {
                 improvement = true;
                 S = tempS;
+                break;
             }
         }
     }

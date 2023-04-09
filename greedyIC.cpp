@@ -126,7 +126,7 @@ set<int> greedyMinInfluenceSet(const Graph& G, double p, int nMonteCarlo, double
     // Mientras la cola Q no esté vacía y difusio(G, p, S) != |V|
     while (!Q.empty()) {
         // If current difussion is OK, break
-        if (diffusion > optimality * numNodes) break;
+        if (diffusion >= optimality * numNodes) break;
 
         int current_node = Q.top().first;
 
