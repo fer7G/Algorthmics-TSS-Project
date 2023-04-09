@@ -1,4 +1,3 @@
-// In this greedy we will pick the vertex with the higher degree that has not been influenced
 #include <iostream>
 #include <vector>
 #include <queue>
@@ -11,6 +10,21 @@
 using namespace std;
 using namespace std::chrono;
 
+void printSet(Subset& S) {
+    cout << "Initial set: {";
+    int n = S.size() - 1;
+    for (int i = 0; i < n; ++i) {
+        cout << S[i] << ", " ;
+    }
+    cout << S[n] << '}' << endl;
+}
+
+// Reset del grafo
+void graphreset(Graph& G){
+    fill(G.influenced.begin(), G.influenced.end(),false);
+    fill(G.peso.begin(), G.peso.end(),0);
+}
+
 void readDegree(const Graph& G, priority_queue<pair<int,int> >& pq) {
     for (int i = 0; i < G.numNodes; ++i) {
             pair<int,int> p;
@@ -21,53 +35,24 @@ void readDegree(const Graph& G, priority_queue<pair<int,int> >& pq) {
 }
 
 void findSubset(Subset& S, priority_queue<pair<int,int> >& pq, Graph& G, double r) {
-    S.push_back(pq.top().second);
-    pq.pop(); 
-    int t = 0;
-    int C = simulateLT(G, r, S, t);
-    bool done = false;
-    while (not done) {
-        cout << "G.totalInfluenced " << G.getTotalInfluenced() << endl;
-            
-        if(C != G.numNodes){
-            while (not pq.empty() and G.influenced[pq.top().second]) {
-                cout << pq.size() << " " << G.influenced[pq.top().second] <<endl;
-                pq.pop();
-            }
-            
-            if(not pq.empty()){
-                S.push_back(pq.top().second);
-                pq.pop();
-                C = simulateLT(G, r, S, t);
-            }
-            else{
-                cout << "elseDolent ";
-                done = true;
-            }
-        }
-        else {
-                cout << "elseBo ";
-                done = true;
-        }
+    while (!pq.empty()) {
+        int node = pq.top().second;
+        pq.pop();
+        S.push_back(node);
+        int t;
+        graphreset(G);
 
-    }
-    cout << "done " << C << " n " << G.numNodes << endl;
-}
+        //Estas 2 variables porque por algun motivo 10 != 10
+        int aux1 = simulateLT(G, r, S,t);
+        int aux2 = G.numNodes;
 
-void printSet(Subset& S) {
-    cout << "Initial set: {";
-    int n = S.size() - 1;
-    for (int i = 0; i < n; ++i) {
-        cout << S[i] << ", " ;
+        if (aux1 == aux2) break;
     }
-    cout << S[n] << '}' << endl;
 }
 
 int main () {
     unsigned seed = chrono::high_resolution_clock::now().time_since_epoch().count();
-    cout << "Hola" << endl;
     Graph G= readGraph();
-    cout << "Adios" << endl;
     double r = 0.5;
     priority_queue<pair<int,int> > pq; // first = grado, second = vertice
     readDegree(G, pq);

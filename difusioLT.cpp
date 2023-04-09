@@ -9,80 +9,65 @@ using Subset = vector<int>;
 // Struct for undirected graph
 struct Graph {
     int numNodes;
-    vector<vector<int> > adjList;
+    vector<vector<int>> adjList;
     vector<bool> influenced;
     vector<int> peso;
 
     // Graph constructor:
-    Graph(int n) {
-        numNodes = n;
-        adjList.resize(n);
-        influenced.resize(n);
-        peso = vector<int> (n,0);
-    }
+    Graph(int n) : numNodes(n), adjList(n), influenced(n), peso(n) {}
 
-    Graph() {
-    }
     void addEdge(int u, int v) {
         adjList[u].push_back(v);
         adjList[v].push_back(u);
-    }   
-    void actualizarpesovecinos(int x){
-        for(int i= 0; i< adjList[x].size(); ++i){
-            //cout << "arista de "<< x <<" :"<<adjList[x][i]<<endl;
-            ++peso[adjList[x][i]];
-        }
     }
-    int getTotalInfluenced(){
-        int retVal = 0;
-        for (bool u : influenced)
-            if(u)
-                ++retVal;
-        return retVal;
+
+    void actualizarpesovecinos(int x) {
+        for (auto neighbor : adjList[x]) ++peso[neighbor];
     }
 };
 
-
-int simulateLT(Graph& G, double& r, Subset& S, int& t) {
+int simulateLT(Graph& G, double r, Subset& S, int& t) {
     queue<int> active;
     t = -1;
     // Activate initial set of nodes
-    for (int i=0;  i<S.size(); i++) {
-        int vertex = S[i];
-        //cout<< vertex<<endl;
+    for (auto vertex : S) {
         G.influenced[vertex] = true;
         G.actualizarpesovecinos(vertex);
         active.push(vertex);
     }
-    int n_influenced= active.size();
+    int n_influenced = active.size();
     queue<int> influencedAux;
     // Continue until no more active nodes
-    
-    while (not active.empty()) {
+    while (!active.empty()) {
         ++t;
+        int numCurrentActive = active.size();
         // Process all active nodes in the current layer
-        int v = active.front();
-        active.pop();
-        // Check neighbours of v
-        for (int j = 0; j < G.adjList[v].size(); ++j) {
-            int neighbour = G.adjList[v][j];
-             // If neighbor is not already active, try to activate it
-            if (not G.influenced[neighbour]) {
-                double l = r * G.adjList[neighbour].size(); 
-                if (G.peso[neighbour] >= l) {
-                    influencedAux.push(neighbour);
-                    ++n_influenced;
+        for (int i = 0; i < numCurrentActive; ++i) {
+            int v = active.front();
+            active.pop();
+            // Check neighbours of v
+            for (auto neighbor : G.adjList[v]) {
+                // If neighbor is not already active, try to activate it
+                if (!G.influenced[neighbor]) {
+                    double l = r * G.adjList[neighbor].size();
+                    if (G.peso[neighbor] >= l) {
+                        G.influenced[neighbor] = true;
+                        influencedAux.push(neighbor);
+                        ++n_influenced;
+                    }
                 }
             }
-        } 
-        //vaciar la cola
-        while(not influencedAux.empty()) {
+        }
+        // Move influencedAux nodes to active and update their weights
+        while (!influencedAux.empty()) {
             int u = influencedAux.front();
             influencedAux.pop();
-            if (not G.influenced[u] and G.peso[u] != G.adjList[u].size()){
-                G.influenced[u] = true;
+            if (G.peso[u] != G.adjList[u].size()) {
                 active.push(u);
-                G.actualizarpesovecinos(u);
+                ++G.peso[u];
+                for (auto neighbor : G.adjList[u]) {
+                    ++G.peso[neighbor];
+                }
             }
         }
     }
@@ -102,13 +87,13 @@ Graph readGraph() {
     int u, v;
     for (int i = 0; i < m; ++i) {
         cin >> e >> u >> v;
-        G.addEdge(u-1, v-1);
+        G.addEdge(u - 1, v - 1);
     }
 
     return G;
 }
 
-void readInputSubset (Subset& S) {
+void readInputSubset(Subset& S) {
     int s;
     cout << "Enter number of nodes in the initial seed: ";
     cin >> s;
@@ -119,14 +104,14 @@ void readInputSubset (Subset& S) {
         S.push_back(u);
     }
 }
-
-/*/ De momento lo dejamos asi, seguramente haya que borrar el main del greedy
-int main () {
+/*
+int main() {
     Graph G = readGraph();
-    double r= 0.5;
+    double r = 0.5;
     Subset S;
     readInputSubset(S);
     int t = 0;
+
     int C = simulateLT(G, r, S, t); // Falta hacer la funcion
     cout << "Size of C: " << C << endl;
     cout << "Value of t: " << t << endl;
