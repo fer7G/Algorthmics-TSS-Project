@@ -19,12 +19,6 @@ void printSet(Subset& S) {
     cout << S[n] << '}' << endl;
 }
 
-// Reset del grafo
-void graphreset(Graph& G){
-    fill(G.influenced.begin(), G.influenced.end(),false);
-    fill(G.peso.begin(), G.peso.end(),0);
-}
-
 void readDegree(const Graph& G, priority_queue<pair<int,int> >& pq) {
     for (int i = 0; i < G.numNodes; ++i) {
             pair<int,int> p;
@@ -40,7 +34,6 @@ void findSubset(Subset& S, priority_queue<pair<int,int> >& pq, Graph& G, double 
         pq.pop();
         S.push_back(node);
         int t;
-        graphreset(G);
 
         //Estas 2 variables porque por algun motivo 10 != 10
         int aux1 = simulateLT(G, r, S,t);
