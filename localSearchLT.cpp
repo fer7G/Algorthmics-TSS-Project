@@ -6,17 +6,18 @@ Subset greedyMinInfluenceSet(Graph& G, double r) {
     priority_queue<pair<int,int>> gain;
 
     // Ordenar el vector de nodos por ganancia marginal
+    /*
     for (int i = 0; i < G.numNodes; ++i) {
             Subset s(1, i);
             int t = 0;
             gain.push(make_pair(simulateLT(G, r, s, t), i));
-    }
+    }*/
     // Ordenar el vector de nodos por grado de aristas
-    /*
+   
     for (int i = 0; i < G.numNodes; ++i) {
             gain.push(make_pair(G.adjList[i].size(), i));
     }
-    */
+    
     int t;
     // Mientras aún haya nodos con ganancia marginal positiva y difusio(G, p, S) != |V|
     while (!gain.empty()) {

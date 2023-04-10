@@ -1,16 +1,6 @@
-#include <iostream>
-#include <vector>
-#include <queue>
 #include <algorithm>
-#include <utility>
-#include <set>
-#include <ctime>
-#include <chrono>
 #include <cmath>
 #include "difusioLT.cpp"
-using namespace std;
-using namespace std::chrono;
-typedef pair<int, int> pii;
 
 // Greedy algorithm to select the minimum influence set
 Subset greedyMinInfluenceSet(Graph& G, double r) {
@@ -70,6 +60,7 @@ Subset simulatedAnnealing(Graph& G, double p, Subset& S, int maxIter, double T, 
         // Calculate gains per node for S and S'
         double gain_S;
         double propagation = simulateLT(G, p, S_prime, t);
+        //cout << iter << "\t"<<S_prime.size() << endl;
         if (propagation != G.numNodes) continue;
 
         if (iter == 0) gain_S = bestGain;
@@ -81,10 +72,11 @@ Subset simulatedAnnealing(Graph& G, double p, Subset& S, int maxIter, double T, 
         double prob = exp(delta / T);
 
         // If S' is better or accepted with probability, update S
+        
         if (delta > 0 or (double)rand() / RAND_MAX < prob) {
             S = S_prime;
-            //cout << S.size() << endl;
             if (gain_S_prime > bestGain) {
+                //cout << "Millora en iteració "<< iter << ": Tamany del conjunt:"<<S.size() << endl;
                 bestSolution = S_prime;
                 bestGain = gain_S_prime;
             }
@@ -119,7 +111,7 @@ int main() {
     cout << "Nodos semilla seleccionados en la solución inicial: " << S.size() << " en " << (double)duration.count()/1000 << " s" << endl;
 
     // Set the parameters for Simulated Annealing
-    int maxIter = 1000;
+    int maxIter = 15000;
     double T = 100;
     double alpha = 0.99;
 
