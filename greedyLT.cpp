@@ -1,62 +1,48 @@
 #include "difusioLT.cpp"
 
-void printSet(Subset& S) {
-    cout << "Initial set: {";
-    int n = S.size() - 1;
-    for (int i = 0; i < n; ++i) {
-        cout << S[i] << ", " ;
-    }
-    cout << S[n] << '}' << endl;
-}
+Subset greedyMinInfluenceSet(Graph& G, double r) {
+    Subset S;
+    priority_queue<pair<int,int>> gain;
 
-void readDegree(Graph& G, double r, priority_queue<pair<int,int> >& pq) {
-    for (int i = 0; i < G.numNodes; ++i) {
-            pair<int,int> p;
-            p.first = G.adjList[i].size();
-            p.second = i;
-            pq.push(p);
-        }
-}
-
-void readGain(Graph& G, double r, priority_queue<pair<int,int> >& pq) {
+    // Ordenar el vector de nodos por ganancia marginal
     for (int i = 0; i < G.numNodes; ++i) {
             Subset s(1, i);
             int t = 0;
-            pq.push(make_pair(simulateLT(G, r, s, t), i));
-        }
-}
-
-void findSubset(Subset& S, priority_queue<pair<int,int> >& pq, Graph& G, double r) {
-    int v = pq.top().second;
-    pq.pop();
-    S.push_back(v);
-    int t = 0;
-    int difusio = simulateLT(G, r, S, t);
-    while (not pq.empty() and difusio != G.numNodes) {
-        v = pq.top().second;
-        while (G.influenced[v]) {
-            v = pq.top().second;
-            pq.pop();
-        }
-        S.push_back(v);
-        difusio = simulateLT(G, r, S, t);
-        pq.pop();
+            gain.push(make_pair(simulateLT(G, r, s, t), i));
     }
+    // Ordenar el vector de nodos por grado de aristas
+    /*
+    for (int i = 0; i < G.numNodes; ++i) {
+            gain.push(make_pair(G.adjList[i].size(), i));
+    }
+    */
+    int t;
+
+    // Mientras aún haya nodos con ganancia marginal positiva y difusio(G, p, S) != |V|
+    while (!gain.empty()) {
+        int node = gain.top().second;
+        gain.pop();
+        while (G.influenced[node]) {
+            node = gain.top().second;
+            gain.pop();
+        }
+        S.push_back(node);
+        if (simulateLT(G, r, S, t) == G.numNodes) break;
+    }
+    return S;
 }
 
 int main () {
     unsigned seed = chrono::high_resolution_clock::now().time_since_epoch().count();
     Graph G= readGraph();
     double r = 0.5;
-    priority_queue<pair<int,int> > pq; // first = grado | millora marginal, second = vertex
-    //readDegree(G, r, pq);
-    readGain(G, r, pq);
-    Subset S;
+
     auto start = high_resolution_clock::now();
-    findSubset(S, pq, G, r);
+    Subset S = greedyMinInfluenceSet(G,r);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
+
     //printSet(S);
-    cout << "Nodos del subset: "<< S.size()<< endl;
-    cout << "en " << (double)duration.count()/1000 << " s" << endl;
+    cout << "Nodos semilla seleccionados:" << S.size()<<endl;
+    cout << " en " << (double)duration.count()/1000 << " s"<<endl;
 }

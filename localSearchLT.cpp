@@ -1,68 +1,37 @@
-#include <iostream>
-#include <vector>
-#include <queue>
 #include <algorithm>
-#include <utility>
-#include <set>
-#include <ctime>
-#include <chrono>
 #include "difusioLT.cpp"
-using namespace std;
-using namespace std::chrono;
-typedef pair<int, int> pii;
-using Subset = vector<int>;
 
-// Comparer for the priority queue
-struct Compare {
-    bool operator()(const pii& a, const pii& b) {
-        return a.second < b.second;
-    }
-};
-
-
-// Greedy algorithm to select the minimum influence set
-Subset greedyMinInfluenceSet(Graph& G, double p) {
+Subset greedyMinInfluenceSet(Graph& G, double r) {
     Subset S;
-    vector<pair<int, int>> gain;
-    int numNodes = G.numNodes;
-    priority_queue<pii, vector<pii>, Compare> Q;
-
-    // Calcular la ganancia marginal de todos los nodos e ir insertando en la cola de prioridad
-    for (int i = 0; i < G.numNodes; ++i) {
-        Subset single_node_set;
-        single_node_set.push_back(i);
-        int t;
-        int gain_val = simulateLT(G, p, single_node_set, t);
-        gain.push_back(make_pair(i, gain_val));
-    }
+    priority_queue<pair<int,int>> gain;
 
     // Ordenar el vector de nodos por ganancia marginal
-    sort(gain.begin(), gain.end(), [](auto& a, auto& b) { return a.second > b.second; });
-
-    // Añadir el primer nodo del vector de ganancia a S
-    S.push_back(gain[0].first);
-
-    // Calcular la difusión de S
-    int t;
-    int diffusion = simulateLT(G, p, S, t);
-
-    // Mientras aún haya nodos con ganancia marginal positiva y difusio(G, p, S) != |V|
-    for (int i = 1; i < G.numNodes && diffusion < numNodes; ++i) {
-        int current_node = gain[i].first;
-
-        // Añadir el nodo a S si no está presente y la difusión aumenta
-        Subset tempS(S);
-        tempS.push_back(current_node);
-        int t;
-        int temp_diffusion = simulateLT(G, p, tempS, t);
-        if (temp_diffusion > diffusion) {
-            S = tempS;
-            diffusion = temp_diffusion;
-        }
+    for (int i = 0; i < G.numNodes; ++i) {
+            Subset s(1, i);
+            int t = 0;
+            gain.push(make_pair(simulateLT(G, r, s, t), i));
     }
-
+    // Ordenar el vector de nodos por grado de aristas
+    /*
+    for (int i = 0; i < G.numNodes; ++i) {
+            gain.push(make_pair(G.adjList[i].size(), i));
+    }
+    */
+    int t;
+    // Mientras aún haya nodos con ganancia marginal positiva y difusio(G, p, S) != |V|
+    while (!gain.empty()) {
+        int node = gain.top().second;
+        gain.pop();
+        while (G.influenced[node]) {
+            node = gain.top().second;
+            gain.pop();
+        }
+        S.push_back(node);
+        if (simulateLT(G, r, S, t) == G.numNodes) break;
+    }
     return S;
 }
+
 
 // Local search algorithm for best improvement
 void localSearch(Graph& G, double r, Subset& S) {
@@ -85,7 +54,6 @@ void localSearch(Graph& G, double r, Subset& S) {
     }
 }
 
-
 int main() {
     
     // Generate random seed for proper random values
@@ -105,7 +73,7 @@ int main() {
     auto duration = duration_cast<milliseconds>(stop - start);
 
     // Greedy solution output
-    cout << "Nodos semilla seleccionados en la solución inicial:" << S.size() << " en " << (double)duration.count()/1000 << " s" << endl;
+    cout << "Nodos semilla seleccionados en la solución inicial: " << S.size() << " en " << (double)duration.count()/1000 << " s" << endl;
 
     start = high_resolution_clock::now();
     // Compute a localSearch approach from the greedy solution
@@ -114,5 +82,5 @@ int main() {
     duration = duration_cast<milliseconds>(stop - start);
 
     // Local search solution output
-    cout << "Nodos semilla seleccionados por la búsqueda local:" << S.size() << " en " << (double)duration.count()/1000 << " s" << endl;
+    cout << "Nodos semilla seleccionados por la búsqueda local: " << S.size() << " en " << (double)duration.count()/1000 << " s" << endl;
 }

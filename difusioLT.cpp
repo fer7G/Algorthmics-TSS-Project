@@ -99,26 +99,38 @@ Graph readGraph() {
     return G;
 }
 
-void readInputSubset(Subset& S) {
+Subset readInputSubset() {
     int s;
     cout << "Enter number of nodes in the initial seed: ";
     cin >> s;
     cout << "Enter " << s << " nodes for the initial seed: ";
+    Subset S(s);
     for (int i = 0; i < s; ++i) {
         int u;
         cin >> u;
         S.push_back(u);
     }
+    return S;
 }
+
+void printSet(Subset& S) {
+    cout << "Initial set: {";
+    int n = S.size() - 1;
+    for (int i = 0; i < n; ++i) {
+        cout << S[i] << ", " ;
+    }
+    cout << S[n] << '}' << endl;
+}
+
 /*
 int main() {
     Graph G = readGraph();
+    Subset S = readInputSubset();
     double r = 0.5;
-    Subset S;
-    readInputSubset(S);
     int t = 0;
 
     int C = simulateLT(G, r, S, t); // Falta hacer la funcion
     cout << "Size of C: " << C << endl;
     cout << "Value of t: " << t << endl;
-}*/
+}
+*/
