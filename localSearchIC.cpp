@@ -141,7 +141,8 @@ set<int> greedyMinInfluenceSet(const Graph& G, double p, int nMonteCarlo, double
     return S;
 }
 
-// Local search algorithm for best improvement
+// Local search algorithm for first improvement, based on number of nodes heuristics at every subset S
+// We pick the first successor state which reduces S by 1 (obviously) and the state is still a solution
 void localSearch(const Graph& G, double p, set<int>& S, int nMonteCarlo, double optimality) {
     bool improvement = true;
     

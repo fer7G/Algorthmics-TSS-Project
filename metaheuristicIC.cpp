@@ -161,24 +161,27 @@ Graph readGraph() {
     return G;
 }
 
-// Simulated Annealing algorithm
+// Simulated Annealing algorithm based on gain per node heuristics at every subset S, in order to minimize the number of nodes
 set<int> simulatedAnnealing(const Graph& G, double p, set<int>& S, int nMonteCarlo, double optimality, int maxIter, double T, double alpha) {
     set<int> bestSolution = S;
-    int bestGain = monteCarlo(G, p, S, nMonteCarlo);
+    int numNodes = G.numNodes;
+    double bestGain = monteCarlo(G, p, S, nMonteCarlo) / S.size();
 
     for (int iter = 0; iter < maxIter and T > 1e-5; ++iter) { // 1e-5 represents a low temperature at which we stop cooling
-        // Generate random neighbor solution S'
+        // Generate random neighbor solution S' erasing or adding a random node
         set<int> S_prime = S;
-        int random_node = rand() % G.numNodes;
+        int random_node = rand() % numNodes;
         if (S_prime.count(random_node) > 0) {
             S_prime.erase(random_node);
         } else {
             S_prime.insert(random_node);
         }
 
-        // Calculate gains for S and S'
-        int gain_S = monteCarlo(G, p, S, nMonteCarlo);
-        int gain_S_prime = monteCarlo(G, p, S_prime, nMonteCarlo);
+        // Calculate gains per node for S and S'
+        double gain_S;
+        if (iter == 0) gain_S = bestGain;
+        else gain_S = monteCarlo(G, p, S, nMonteCarlo) / S.size();
+        double gain_S_prime = monteCarlo(G, p, S_prime, nMonteCarlo) / S_prime.size();
 
         // Calculate acceptance probability
         double delta = gain_S_prime - gain_S;
@@ -213,7 +216,7 @@ int main() {
     double p = 0.5;
 
     // Set MonteCarlo iterations i.e. number of times the simulation will be executed each time (more iterations -> slower but more accurate)
-    int nMonteCarlo = 100;
+    int nMonteCarlo = 10;
 
     // Set the optimality, e. g. if optimality is 0.9 we will obtain a subset S whose MonteCarlo simulation warrantees covering 90% of the graph
     double optimality = 1;
