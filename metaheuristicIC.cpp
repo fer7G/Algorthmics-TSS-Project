@@ -167,7 +167,7 @@ set<int> simulatedAnnealing(const Graph& G, double p, set<int>& S, int nMonteCar
     int numNodes = G.numNodes;
     double bestGain = monteCarlo(G, p, S, nMonteCarlo) / S.size();
 
-    for (int iter = 0; iter < maxIter and T > 1e-5; ++iter) { // 1e-5 represents a low temperature at which we stop cooling
+    for (int iter = 0; iter < maxIter; ++iter) {
         // Generate random neighbor solution S' erasing or adding a random node
         set<int> S_prime = S;
         int random_node = rand() % numNodes;
@@ -185,7 +185,7 @@ set<int> simulatedAnnealing(const Graph& G, double p, set<int>& S, int nMonteCar
 
         // Calculate acceptance probability
         double delta = gain_S_prime - gain_S;
-        double prob = exp(delta / T);
+        double prob = 1.0 / exp(delta / T);
 
         // If S' is better or accepted with probability, update S
         if (delta > 0 or (double)rand() / RAND_MAX < prob) {
