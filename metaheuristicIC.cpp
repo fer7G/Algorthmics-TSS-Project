@@ -109,7 +109,7 @@ set<int> greedyMinInfluenceSet(const Graph& G, double p, int nMonteCarlo, double
     priority_queue<pii, vector<pii>, Compare> Q;
 
     // Calcular la ganancia marginal de todos los nodos e ir insertando en la cola de prioridad
-    for (int i = 0; i < numNodes; ++i) {
+    for (int i = 0; i < G.numNodes; ++i) {
         set<int> single_node_set;
         single_node_set.insert(i);
         int gain_val = monteCarlo(G, p, single_node_set, nMonteCarlo);
@@ -141,29 +141,6 @@ set<int> greedyMinInfluenceSet(const Graph& G, double p, int nMonteCarlo, double
     return S;
 }
 
-// Local search algorithm for best improvement
-void localSearch(const Graph& G, double p, set<int>& S, int nMonteCarlo, double optimality) {
-    bool improvement = true;
-    
-    while (improvement) {
-        improvement = false;
-        int currentInfluence = monteCarlo(G, p, S, nMonteCarlo);
-        for (int node : S) {
-            set<int> tempS(S);
-            tempS.erase(node);
-            // int currentInfluence = monteCarlo(G, p, S, nMonteCarlo);
-            int tempInfluence = monteCarlo(G, p, tempS, nMonteCarlo);
-            
-            if (tempInfluence >= currentInfluence && tempInfluence >= optimality * G.numNodes) {
-                improvement = true;
-                S = tempS;
-                break;
-            }
-        }
-    }
-}
-
-
 // Read a Graph (adapted for dimacs files)
 Graph readGraph() {
     char p;
@@ -182,6 +159,45 @@ Graph readGraph() {
     }
 
     return G;
+}
+
+// Simulated Annealing algorithm
+set<int> simulatedAnnealing(const Graph& G, double p, set<int>& S, int nMonteCarlo, double optimality, int maxIter, double T, double alpha) {
+    set<int> bestSolution = S;
+    int bestGain = monteCarlo(G, p, S, nMonteCarlo);
+
+    for (int iter = 0; iter < maxIter and T > 1e-5; ++iter) { // 1e-5 represents a low temperature at which we stop cooling
+        // Generate random neighbor solution S'
+        set<int> S_prime = S;
+        int random_node = rand() % G.numNodes;
+        if (S_prime.count(random_node) > 0) {
+            S_prime.erase(random_node);
+        } else {
+            S_prime.insert(random_node);
+        }
+
+        // Calculate gains for S and S'
+        int gain_S = monteCarlo(G, p, S, nMonteCarlo);
+        int gain_S_prime = monteCarlo(G, p, S_prime, nMonteCarlo);
+
+        // Calculate acceptance probability
+        double delta = gain_S_prime - gain_S;
+        double prob = exp(delta / T);
+
+        // If S' is better or accepted with probability, update S
+        if (delta > 0 or (double)rand() / RAND_MAX < prob) {
+            S = S_prime;
+            if (gain_S_prime > bestGain) {
+                bestSolution = S_prime;
+                bestGain = gain_S_prime;
+            }
+        }
+
+        // Decrease temperature
+        T *= alpha;
+    }
+
+    return bestSolution;
 }
 
 int main() {
@@ -211,12 +227,17 @@ int main() {
     // Greedy solution output
     cout << "Nodos semilla seleccionados en la solución inicial: " << S.size() << " en " << (double)duration.count()/1000 << " s" << endl;
 
-    start = high_resolution_clock::now();
-    // Compute a localSearch approach from the greedy solution
-    localSearch(G, p, S, nMonteCarlo, optimality);
-    stop = high_resolution_clock::now();
-    duration = duration_cast<milliseconds>(stop - start);
+    // Set the parameters for Simulated Annealing
+    int maxIter = 1000;
+    double T = 100;
+    double alpha = 0.99;
 
-    // Local search solution output
-    cout << "Nodos semilla seleccionados por la búsqueda local: " << S.size() << " en " << (double)duration.count()/1000 << " s" << endl;
+    // Improve the initial solution with Simulated Annealing
+    auto start_SA = high_resolution_clock::now();
+    set<int> improved_S = simulatedAnnealing(G, p, S, nMonteCarlo, optimality, maxIter, T, alpha);
+    auto stop_SA = high_resolution_clock::now();
+    auto duration_SA = duration_cast<milliseconds>(stop_SA - start_SA);
+
+    // Simulated Annealing solution output
+    cout << "Nodos semilla seleccionados por el simulated annealing: " << S.size() << " en " << (double)duration_SA.count()/1000 << " s" << endl;
 }
